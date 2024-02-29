@@ -2,6 +2,8 @@ import { ButtonHTMLAttributes, useEffect, useRef, useState } from 'react';
 
 import { ReactComponent as SteeringWheel } from '../assets/steering-wheel.svg';
 
+import { useDeviceOrientation } from "./useDeviceOrientation";
+
 const useDefined = <T,>(v: T): T => {
   const ref = useRef(v);
   if (v) {
@@ -114,6 +116,9 @@ const Wheel = ({
   input: number | undefined;
 }) => {
   const [{ angle, rotations }, setState] = useState({ angle: 0, rotations: 0 });
+  const [isGyro, setIsGyro] = useState(true);
+  const [initialAlpha, setInitialAlpha] = useState<number | null>(null);
+  const { orientation, requestAccess, revokeAccess, error: orientationError } = useDeviceOrientation();
 
   useEffect(() => {
     if (!angle && !rotations) {
@@ -156,49 +161,75 @@ const Wheel = ({
       ? (input / 100) * Math.PI
       : 0;
 
+  useEffect(() => {
+    const rotate180 = (x: number) => (x + 180 > 360 ? x - 180 : x + 180);
+    if(!orientationError && orientation && initialAlpha === null) {
+      setInitialAlpha(rotate180(orientation.alpha || 0));
+    } else if(!orientationError && orientation && initialAlpha !== null) {
+      handleSetAngle(-(rotate180(orientation.alpha || 0) - initialAlpha) / 15);
+    }
+  }, [initialAlpha, orientation?.alpha, orientationError]);
+
   return (
-    <SteeringWheel
-      onMouseDown={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const initialAngle = Math.atan2(
-          e.clientY - centerY,
-          e.clientX - centerX,
-        );
-        handleSetAngle(0);
-        const controller = new AbortController();
-        const signal = controller.signal;
+    <>
+      {orientationError?.message}
+      <SteeringWheel
+        onTouchEnd={(e) => {
+          if(!isGyro) {
+            requestAccess().then(() => {
+              setIsGyro(true)
+            });
+          } else {
+            handleSetAngle(undefined);
+            revokeAccess().then(() => {
+              setIsGyro(false)
+            });
+          }
 
-        document.body.style.cursor = 'grabbing';
+        }}
+        onMouseDown={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const initialAngle = Math.atan2(
+            e.clientY - centerY,
+            e.clientX - centerX,
+          );
+          handleSetAngle(0);
+          const controller = new AbortController();
+          const signal = controller.signal;
 
-        const finish = () => {
-          document.body.style.cursor = '';
+          document.body.style.cursor = 'grabbing';
 
-          controller.abort();
-          handleSetAngle(undefined);
-        };
-        document.addEventListener(
-          'mousemove',
-          (e) => {
-            const currentAngle = Math.atan2(
-              e.clientY - centerY,
-              e.clientX - centerX,
-            );
-            handleSetAngle(currentAngle - initialAngle);
-          },
-          { signal },
-        );
-        document.body.addEventListener('mouseleave', finish, {
-          signal,
-        });
-        document.addEventListener('mouseup', finish, {
-          signal,
-        });
-      }}
-      className="h-24 cursor-grab fill-slate-100 "
-      style={{ transform: `rotate(${renderAngle}rad)` }}
-    />
+          const finish = () => {
+            document.body.style.cursor = '';
+
+            controller.abort();
+            handleSetAngle(undefined);
+          };
+          document.addEventListener(
+            'mousemove',
+            (e) => {
+              const currentAngle = Math.atan2(
+                e.clientY - centerY,
+                e.clientX - centerX,
+              );
+              handleSetAngle(currentAngle - initialAngle);
+            },
+            { signal },
+          );
+          document.body.addEventListener('mouseleave', finish, {
+            signal,
+          });
+          document.addEventListener('mouseup', finish, {
+            signal,
+          });
+        }}
+        className="h-24 cursor-grab fill-slate-100 "
+        style={{ transform: `rotate(${renderAngle}rad)` }}
+      />
+      Drag or Tap to drive!
+    </>
   );
 };
 
