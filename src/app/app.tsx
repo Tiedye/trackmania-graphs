@@ -258,7 +258,13 @@ const Graph = () => {
         <Bar inputRange={actionKey} outputRange={actionKey} input={absInput} />
       </div>
       <div className="font-bold">
-        After{absInput && <> - {Math.round((absInput * actionKey) / 100)}%</>}
+        After
+        {absInput && (
+          <>
+            {' '}
+            - {Math.min(Math.round((absInput * actionKey) / 100), actionKey)}%
+          </>
+        )}
         <Bar inputRange={100} outputRange={actionKey} input={absInput} />
       </div>
       <div className="flex gap-1 py-2">
