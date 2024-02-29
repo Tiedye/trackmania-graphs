@@ -116,7 +116,7 @@ const Wheel = ({
   input: number | undefined;
 }) => {
   const [{ angle, rotations }, setState] = useState({ angle: 0, rotations: 0 });
-  const [isGyro, setIsGyro] = useState(true);
+  const [isGyro, setIsGyro] = useState(false);
   const [initialAlpha, setInitialAlpha] = useState<number | null>(null);
   const { orientation, requestAccess, revokeAccess, error: orientationError } = useDeviceOrientation();
 
@@ -166,7 +166,8 @@ const Wheel = ({
     if(!orientationError && orientation && initialAlpha === null) {
       setInitialAlpha(rotate180(orientation.alpha || 0));
     } else if(!orientationError && orientation && initialAlpha !== null) {
-      handleSetAngle(-(rotate180(orientation.alpha || 0) - initialAlpha) / 15);
+      const angle = ((orientation.gamma || 0) > 0) ? 90 - (orientation.beta || 0) : (orientation.beta || 0) - 90;
+      handleSetAngle((angle * 3) / 180 * Math.PI);
     }
   }, [initialAlpha, orientation?.alpha, orientationError]);
 
@@ -229,6 +230,11 @@ const Wheel = ({
         style={{ transform: `rotate(${renderAngle}rad)` }}
       />
       Drag or Tap to drive!
+      {isGyro && false ? (
+        <div className={"text-gray-100 text-sm"} style={{fontFamily: "courier new"}}>
+          {Math.floor(orientation?.alpha || 0)} / {Math.floor(orientation?.beta || 0)} / {Math.floor(orientation?.gamma || 0)} / {Math.floor(angle / Math.PI * 180)}
+        </div>
+      ) : null}
     </>
   );
 };
