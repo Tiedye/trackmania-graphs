@@ -138,11 +138,23 @@ const Wheel = ({
         }
         return 0;
       })();
-      return { angle: newAngle, rotations: rotations + rotationDelta };
+      return {
+        angle: newAngle,
+        rotations: Math.max(-2, Math.min(rotations + rotationDelta, 2)),
+      };
     });
   };
 
-  const renderAngle = angle ? angle : input ? (input / 100) * Math.PI : 0;
+  const clampedAngle = Math.max(
+    -Math.PI,
+    Math.min(angle + 2 * Math.PI * rotations, Math.PI),
+  );
+
+  const renderAngle = clampedAngle
+    ? clampedAngle
+    : input
+      ? (input / 100) * Math.PI
+      : 0;
 
   return (
     <SteeringWheel
