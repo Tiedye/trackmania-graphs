@@ -108,6 +108,7 @@ const Key = (props: ButtonHTMLAttributes<HTMLButtonElement>) => (
 
 const Wheel = ({
   onInput,
+  input,
 }: {
   onInput: (value: number | undefined) => void;
   input: number | undefined;
@@ -119,16 +120,13 @@ const Wheel = ({
       onInput(undefined);
       return;
     }
-    const normalizedAngle = Math.abs(
-      (angle + 2 * Math.PI * rotations) / Math.PI,
-    );
+    const normalizedAngle = (angle + 2 * Math.PI * rotations) / Math.PI;
     onInput(normalizedAngle * 100);
   }, [angle, rotations, onInput]);
 
   const handleSetAngle = (newAngle: number | undefined) => {
     setState(({ angle, rotations }) => {
       if (newAngle == null) {
-        onInput(undefined);
         return { angle: 0, rotations: 0 };
       }
       const rotationDelta = (() => {
@@ -143,10 +141,12 @@ const Wheel = ({
       return { angle: newAngle, rotations: rotations + rotationDelta };
     });
   };
+
+  const renderAngle = angle ? angle : input ? (input / 100) * Math.PI : 0;
+
   return (
     <SteeringWheel
       onMouseDown={(e) => {
-        console.log(e);
         const rect = e.currentTarget.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -185,29 +185,81 @@ const Wheel = ({
         });
       }}
       className="h-24 cursor-grab fill-slate-100 "
-      style={{ transform: `rotate(${angle}rad)` }}
+      style={{ transform: `rotate(${renderAngle}rad)` }}
     />
   );
 };
 
 const Graph = () => {
   const [actionKey, setActionKey] = useState(20);
-  const [input, setInput] = useState<number>();
+  const [wheelInput, setWheelInput] = useState<number>();
+  const [keyInput, setKeyInput] = useState<number>();
 
   useKeybind({ key: '1' }, () => setActionKey(20));
   useKeybind({ key: '2' }, () => setActionKey(40));
   useKeybind({ key: '3' }, () => setActionKey(60));
   useKeybind({ key: '4' }, () => setActionKey(80));
 
+  useEffect(() => {
+    let rightArrowDown = false;
+    let leftArrowDown = false;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') {
+        rightArrowDown = true;
+      }
+      if (e.key === 'ArrowLeft') {
+        leftArrowDown = true;
+      }
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowRight') {
+        rightArrowDown = false;
+      }
+      if (e.key === 'ArrowLeft') {
+        leftArrowDown = false;
+      }
+    });
+    let lastTime = Date.now();
+    const callback = () => {
+      const newTime = Date.now();
+      const delta = (newTime - lastTime) / 1000;
+      lastTime = newTime;
+      frame = requestAnimationFrame(callback);
+      setKeyInput((input) => {
+        const lastInput = input ?? 0;
+        if (Math.abs(lastInput) < 1 && !leftArrowDown && !rightArrowDown) {
+          return undefined;
+        }
+        if (delta === 0) return lastInput;
+        if (!leftArrowDown && !rightArrowDown) {
+          return lastInput * Math.pow(0.2, delta);
+        }
+        if (leftArrowDown) {
+          return -100 - (-100 - lastInput) * Math.pow(0.2, delta);
+        }
+        if (rightArrowDown) {
+          return 100 - (100 - lastInput) * Math.pow(0.2, delta);
+        }
+        return 0;
+      });
+    };
+    let frame = requestAnimationFrame(callback);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const input = wheelInput ?? keyInput;
+
+  const absInput = input ? Math.abs(input) : input;
+
   return (
     <div className="grid gap-3">
       <div className="font-bold">
-        Before
-        <Bar inputRange={actionKey} outputRange={actionKey} input={input} />
+        Before{absInput && <> - {Math.min(Math.round(absInput), actionKey)}%</>}
+        <Bar inputRange={actionKey} outputRange={actionKey} input={absInput} />
       </div>
       <div className="font-bold">
-        After
-        <Bar inputRange={100} outputRange={actionKey} input={input} />
+        After{absInput && <> - {Math.round((absInput * actionKey) / 100)}%</>}
+        <Bar inputRange={100} outputRange={actionKey} input={absInput} />
       </div>
       <div className="flex gap-1 py-2">
         <Key onClick={() => setActionKey(20)}>1</Key>
@@ -215,7 +267,7 @@ const Graph = () => {
         <Key onClick={() => setActionKey(60)}>3</Key>
         <Key onClick={() => setActionKey(80)}>4</Key>
       </div>
-      <Wheel onInput={setInput} input={input} />
+      <Wheel onInput={setWheelInput} input={keyInput} />
     </div>
   );
 };
