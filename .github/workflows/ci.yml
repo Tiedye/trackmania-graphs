@@ -30,14 +30,14 @@ jobs:
 
       - run: npx nx format:check
       - run: npx nx affected -t lint build
-      - run: npx nx build
+      - run: npx nx build --base=/trackmania-graphs/
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: './dist'
+          path: './dist/trackmania-graphs'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
