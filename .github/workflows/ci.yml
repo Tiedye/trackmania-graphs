@@ -28,7 +28,7 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v3
 
-      - run: npx nx format:check
+      - run: npx nx format:check --verbose
       - run: npx nx affected -t lint build
       - run: npx nx build --base=/trackmania-graphs/
       - name: Setup Pages
