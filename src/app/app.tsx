@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes, useEffect, useRef, useState } from 'react';
 
 import { ReactComponent as SteeringWheel } from '../assets/steering-wheel.svg';
 
-import { useDeviceOrientation } from "./useDeviceOrientation";
+import { useDeviceOrientation } from './useDeviceOrientation';
 
 const useDefined = <T,>(v: T): T => {
   const ref = useRef(v);
@@ -118,7 +118,12 @@ const Wheel = ({
   const [{ angle, rotations }, setState] = useState({ angle: 0, rotations: 0 });
   const [isGyro, setIsGyro] = useState(false);
   const [initialAlpha, setInitialAlpha] = useState<number | null>(null);
-  const { orientation, requestAccess, revokeAccess, error: orientationError } = useDeviceOrientation();
+  const {
+    orientation,
+    requestAccess,
+    revokeAccess,
+    error: orientationError,
+  } = useDeviceOrientation();
 
   useEffect(() => {
     if (!angle && !rotations) {
@@ -163,11 +168,14 @@ const Wheel = ({
 
   useEffect(() => {
     const rotate180 = (x: number) => (x + 180 > 360 ? x - 180 : x + 180);
-    if(!orientationError && orientation && initialAlpha === null) {
+    if (!orientationError && orientation && initialAlpha === null) {
       setInitialAlpha(rotate180(orientation.alpha || 0));
-    } else if(!orientationError && orientation && initialAlpha !== null) {
-      const angle = ((orientation.gamma || 0) > 0) ? 90 - (orientation.beta || 0) : (orientation.beta || 0) - 90;
-      handleSetAngle((angle * 3) / 180 * Math.PI);
+    } else if (!orientationError && orientation && initialAlpha !== null) {
+      const angle =
+        (orientation.gamma || 0) > 0
+          ? 90 - (orientation.beta || 0)
+          : (orientation.beta || 0) - 90;
+      handleSetAngle(((angle * 3) / 180) * Math.PI);
     }
   }, [initialAlpha, orientation, orientation?.alpha, orientationError]);
 
@@ -176,17 +184,16 @@ const Wheel = ({
       {orientationError?.message}
       <SteeringWheel
         onTouchEnd={(e) => {
-          if(!isGyro) {
+          if (!isGyro) {
             requestAccess().then(() => {
-              setIsGyro(true)
+              setIsGyro(true);
             });
           } else {
             handleSetAngle(undefined);
             revokeAccess().then(() => {
-              setIsGyro(false)
+              setIsGyro(false);
             });
           }
-
         }}
         onMouseDown={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
