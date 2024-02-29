@@ -169,7 +169,7 @@ const Wheel = ({
       const angle = ((orientation.gamma || 0) > 0) ? 90 - (orientation.beta || 0) : (orientation.beta || 0) - 90;
       handleSetAngle((angle * 3) / 180 * Math.PI);
     }
-  }, [initialAlpha, orientation?.alpha, orientationError]);
+  }, [initialAlpha, orientation, orientation?.alpha, orientationError]);
 
   return (
     <>
@@ -230,11 +230,11 @@ const Wheel = ({
         style={{ transform: `rotate(${renderAngle}rad)` }}
       />
       Drag or Tap to drive!
-      {isGyro && false ? (
-        <div className={"text-gray-100 text-sm"} style={{fontFamily: "courier new"}}>
-          {Math.floor(orientation?.alpha || 0)} / {Math.floor(orientation?.beta || 0)} / {Math.floor(orientation?.gamma || 0)} / {Math.floor(angle / Math.PI * 180)}
-        </div>
-      ) : null}
+      {/*{isGyro ? (*/}
+      {/*  <div className={"text-gray-100 text-sm"} style={{fontFamily: "courier new"}}>*/}
+      {/*    {Math.floor(orientation?.alpha || 0)} / {Math.floor(orientation?.beta || 0)} / {Math.floor(orientation?.gamma || 0)} / {Math.floor(angle / Math.PI * 180)}*/}
+      {/*  </div>*/}
+      {/*) : null}*/}
     </>
   );
 };
